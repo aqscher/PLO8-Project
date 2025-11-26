@@ -236,6 +236,10 @@ class Render:
         
         # Button bounds for click detection
         self.button_bounds = {}
+
+        self.perspective = 0  # 0 = all cards, 1-9 = that player's cards only
+        self.perspective_slider_bounds = None
+        self.dragging_perspective = False
     
     def get_user_input(self):
         """
@@ -252,12 +256,22 @@ class Render:
             
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # Left click
-                    action = self._handle_mouse_click(event.pos)
-                    if action:
-                        return action
+                    # Check perspective slider first
+                    if self._check_perspective_slider_click(event.pos):
+                        self.dragging_perspective = True
+                    else:
+                        action = self._handle_mouse_click(event.pos)
+                        if action:
+                            return action
+            
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if event.button == 1:
+                    self.dragging_perspective = False
             
             elif event.type == pygame.MOUSEMOTION:
                 self.mouse_pos = event.pos
+                if self.dragging_perspective:
+                    self._handle_perspective_drag(event.pos)
         
         return None
     
@@ -276,6 +290,36 @@ class Render:
                     return {'type': button_id}
         
         return None
+    
+    def _check_perspective_slider_click(self, pos):
+        """Check if perspective slider was clicked"""
+        if not self.perspective_slider_bounds:
+            return False
+        
+        x, y = pos
+        sx, sy, width, height = self.perspective_slider_bounds
+        
+        # Check if click is on slider track or handle
+        return sx <= x <= sx + width and sy - 15 <= y <= sy + 15
+    
+    def _handle_perspective_drag(self, pos):
+        """Update perspective value based on mouse position"""
+        if not self.perspective_slider_bounds:
+            return
+        
+        x, y = pos
+        sx, sy, width, height = self.perspective_slider_bounds
+        
+        # Clamp mouse position to slider bounds
+        x = max(sx, min(x, sx + width))
+        
+        # Calculate ratio
+        ratio = (x - sx) / width
+        
+        # Calculate new value (0-9)
+        new_val = int(ratio * 9)
+        
+        self.perspective = max(0, min(new_val, 9))
     
     def render(self, game_state):
         """
@@ -491,6 +535,10 @@ class Render:
         
         cards = player.get('cards', [None, None, None, None])
         
+        # Determine if cards should be face up based on perspective setting
+        # 0 = all face up, 1-9 = only that player's cards face up
+        should_show_face_up = (self.perspective == 0) or (self.perspective == player['seat'])
+        
         for i in range(4):
             card_x = x + i * (card_width + card_spacing)
             
@@ -498,7 +546,7 @@ class Render:
             card = cards[i] if i < len(cards) else None
             has_card = card is not None and isinstance(card, str) and len(card) >= 2
             
-            if has_card:
+            if has_card and should_show_face_up:
                 # Use CardRenderer to draw actual card from string
                 card_surface = self.card_renderer.render_card(card, face_up=True)
                 self.screen.blit(card_surface, (card_x, y))
@@ -598,7 +646,7 @@ class Render:
                 self.screen.blit(card_surface, (card_x, center_y))
     
     def draw_control_panel(self):
-        """Draw the bottom control panel with action buttons"""
+        """Draw the bottom control panel with action buttons and perspective slider"""
         panel_height = 230
         panel_y = self.HEIGHT - panel_height
         
@@ -608,28 +656,32 @@ class Render:
         pygame.draw.line(self.screen, (80, 80, 80),
                         (0, panel_y), (self.WIDTH, panel_y), 3)
         
+        # Draw perspective slider (bottom left)
+        self.draw_perspective_slider(panel_y)
+        
         # Action buttons
         button_y = panel_y + 40
         button_height = 70
         button_spacing = 20
         
+        # 5 Allowed Actions at any decision point in PLO8
         buttons = [
-            ("FOLD", (180, 60, 60), (220, 80, 80), "fold"),
-            ("CHECK", (100, 100, 100), (130, 130, 130), "check"),
-            ("CALL", (60, 140, 60), (80, 180, 80), "call"),
-            ("RAISE", (60, 120, 180), (80, 150, 220), "raise"),
-            ("ALL IN", (180, 140, 60), (220, 180, 80), "all_in"),
+            ("CHECK / FOLD", (108, 18, 18), (158, 68, 68), "check/fold"),
+            ("CALL / BET MIN", (108, 59, 18), (158, 109, 68), "call/minbet"),
+            ("BET 1/2 POT", (108, 108, 18), (158, 158, 68), "bet1/2pot"),
+            ("BET 3/4 POT", (60, 108, 18), (110, 158, 68), "bet3/4pot"),
+            ("BET POT", (14, 108, 18), (74, 158, 68), "betpot"),
         ]
         
-        total_width = len(buttons) * 160 + (len(buttons) - 1) * button_spacing
+        total_width = len(buttons) * 250 + (len(buttons) - 1) * button_spacing
         start_x = (self.WIDTH - total_width) // 2
         
         # Clear button bounds
         self.button_bounds = {}
         
         for i, (text, color, hover_color, action_id) in enumerate(buttons):
-            btn_x = start_x + i * (160 + button_spacing)
-            self.draw_button(btn_x, button_y, 160, button_height, 
+            btn_x = start_x + i * (250 + button_spacing)
+            self.draw_button(btn_x, button_y, 250, button_height, 
                            text, color, hover_color, f"action_{action_id}")
         
         # Info text
@@ -637,6 +689,47 @@ class Render:
         info_text = info_font.render("Your turn to act", True, self.LIGHT_GRAY)
         info_rect = info_text.get_rect(center=(self.WIDTH // 2, panel_y + 140))
         self.screen.blit(info_text, info_rect)
+    
+    def draw_perspective_slider(self, panel_y):
+        """Draw the perspective slider in bottom left corner"""
+        # Slider position (bottom left corner)
+        slider_x = 40
+        slider_y = panel_y + 160
+        slider_width = 250
+        slider_height = 8
+        
+        # Store bounds for interaction
+        self.perspective_slider_bounds = (slider_x, slider_y, slider_width, slider_height)
+        
+        # Label
+        label_font = pygame.font.SysFont('arial', 20, bold=True)
+        label_text = label_font.render("Perspective", True, self.WHITE)
+        self.screen.blit(label_text, (slider_x + 80, slider_y - 30))
+        
+        # Draw track
+        pygame.draw.rect(self.screen, (100, 100, 100),
+                        (slider_x, slider_y, slider_width, slider_height),
+                        border_radius=4)
+        
+        # Calculate handle position (0-9 values)
+        ratio = self.perspective / 9
+        handle_x = slider_x + int(ratio * slider_width)
+        handle_y = slider_y + slider_height // 2
+        handle_radius = 12
+        
+        # Draw handle
+        handle_color = (150, 150, 150) if self.dragging_perspective else self.WHITE
+        pygame.draw.circle(self.screen, handle_color, (handle_x, handle_y), handle_radius)
+        pygame.draw.circle(self.screen, (80, 80, 80), (handle_x, handle_y), handle_radius, 2)
+        
+        # Value display
+        value_font = pygame.font.SysFont('arial', 18)
+        if self.perspective == 0:
+            value_str = "All Cards"
+        else:
+            value_str = f"Player {self.perspective}"
+        value_text = value_font.render(value_str, True, self.LIGHT_GRAY)
+        self.screen.blit(value_text, (slider_x + slider_width + 16, slider_y - 8))
     
     def draw_button(self, x, y, w, h, text, color, hover_color, button_id):
         """Draw a button and track its bounds for click detection"""
@@ -650,8 +743,8 @@ class Render:
         btn_color = hover_color if hovered else color
         
         # Draw button
-        pygame.draw.rect(self.screen, btn_color, (x, y, w, h), border_radius=10)
-        pygame.draw.rect(self.screen, self.WHITE, (x, y, w, h), 3, border_radius=10)
+        pygame.draw.rect(self.screen, btn_color, (x, y, w, h), border_radius=0)
+        pygame.draw.rect(self.screen, self.WHITE, (x, y, w, h), 3, border_radius=0)
         
         # Draw text
         label = self.large_font.render(text, True, self.WHITE)

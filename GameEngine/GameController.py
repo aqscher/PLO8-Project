@@ -98,15 +98,15 @@ class PLO8:
         
         print(f"Player {self.current_player + 1} action: {action_type}")
         
-        if action_type == 'fold':
+        if action_type == 'check/fold':
             self.handle_fold()
-        elif action_type == 'check':
+        elif action_type == 'call/minbet':
             self.handle_check()
-        elif action_type == 'call':
+        elif action_type == 'bet1/2pot':
             self.handle_call()
-        elif action_type == 'raise':
+        elif action_type == 'bet3/4pot':
             self.handle_raise()
-        elif action_type == 'all_in':
+        elif action_type == 'betpot':
             self.handle_all_in()
         
         # Move to next player
