@@ -7,7 +7,7 @@ Connects GameController and GameRenderer
 #                           CONTROL SETTINGS                                #
 
 NUM_PLAYERS = 9
-STARTING_STACK = 100
+STARTING_STACK = 100.00
 HUMAN_IN_LOOP = True
 SETTINGS = [NUM_PLAYERS, STARTING_STACK, HUMAN_IN_LOOP]
 
@@ -34,19 +34,18 @@ def main(settings):
         # 1. Get user input from renderer
         user_action = renderer.get_user_input()
         
-        # 2. Handle quit
-        if user_action and user_action['type'] == 'quit':
-            controller.running = False
-            break
+        # 2. Quit or process action in controller
+        if user_action:
+            if user_action == 'quit':
+                controller.running = False
+                break
+            else:
+                controller.advance_game(user_action)
         
-        # 3. Process action in controller
-        if user_action and user_action['type'] == 'action':
-            controller.process_action(user_action)
-        
-        # 4. Get current game state from controller
+        # 3. Get current game state from controller
         game_state = controller.get_game_state()
         
-        # 5. Render the state
+        # 4. Render the state
         renderer.render(game_state)
     
     # Cleanup

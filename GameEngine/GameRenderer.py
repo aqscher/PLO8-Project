@@ -40,7 +40,9 @@ class CardRenderer:
         pygame.font.init()
         self.rank_font = pygame.font.SysFont('arial', 42, bold=True)
         self.suit_font = pygame.font.SysFont('arial', 42)
-        
+        self.rank_font_scaled = pygame.font.SysFont('arial', 63, bold=True)
+        self.suit_font_scaled = pygame.font.SysFont('arial', 63)
+
         # Colors
         self.WHITE = (250, 250, 250)
         self.BLACK = (0, 0, 0)
@@ -51,7 +53,7 @@ class CardRenderer:
         self.CARD_BACK_COLOR = (30, 30, 30)
         self.CARD_BACK_BORDER = (180, 80, 80)
     
-    def render_card(self, card, face_up: bool = True) -> pygame.Surface:
+    def render_card(self, card, face_up: bool = True, scaled: bool = False) -> pygame.Surface:
         """
         Render a card
         
@@ -64,17 +66,24 @@ class CardRenderer:
             pygame.Surface of the rendered card
         """
         # Create card surface
-        card_surface = pygame.Surface((self.card_width, self.card_height), pygame.SRCALPHA)
-        
+        if scaled:
+            card_surface = pygame.Surface((1.5*self.card_width, 1.5*self.card_height), pygame.SRCALPHA)
+        else:
+            card_surface = pygame.Surface((self.card_width, self.card_height), pygame.SRCALPHA)
+
         if not face_up:
             # Draw card back
             self._draw_card_back(card_surface)
         else:
-            self._draw_card_face(card_surface, card)
+            self._draw_card_face(card_surface, card, scaled)
         
         # Draw border
         border_color = self.CARD_BACK_BORDER if not face_up else self.BLACK
-        pygame.draw.rect(card_surface, border_color, 
+        if scaled:
+            pygame.draw.rect(card_surface, border_color, 
+                        (0, 0, 1.5*self.card_width, 1.5*self.card_height), 5, border_radius=self.card_radius)
+        else:
+            pygame.draw.rect(card_surface, border_color, 
                         (0, 0, self.card_width, self.card_height), 4, border_radius=self.card_radius)
         
         return card_surface
@@ -97,7 +106,7 @@ class CardRenderer:
         
         return suit_char, rank_str
     
-    def _draw_card_face(self, surface: pygame.Surface, card_str: str):
+    def _draw_card_face(self, surface: pygame.Surface, card_str: str, scaled: bool = False):
         """Draw the face of a card from string format like 'HA', 'D10', 'CK'"""
         # Parse card string
         suit_char, rank_str = self._parse_card(card_str)
@@ -121,20 +130,30 @@ class CardRenderer:
             surface.get_rect(),
             border_radius=self.card_radius
         )
-        
         # Get symbols
         rank_display = self.RANK_DISPLAY.get(rank_str, rank_str)
         suit_symbol = self.SUIT_SYMBOLS.get(suit_char, '?')
-        
-        # Draw rank in top-left
-        rank_text = self.rank_font.render(rank_display, True, self.WHITE)
-        surface.blit(rank_text, (10, 4),)
-        
-        # Draw large suit symbol in center
-        large_suit = self.suit_font.render(suit_symbol, True, self.WHITE)
-        suit_x = (self.card_width - large_suit.get_width() + 26) // 2
-        suit_y = (self.card_height - large_suit.get_height() + 30) // 2
-        surface.blit(large_suit, (suit_x, suit_y))
+
+        if scaled:
+            # Draw rank in top-left
+            rank_text = self.rank_font_scaled.render(rank_display, True, self.WHITE)
+            surface.blit(rank_text, (15, 6),)
+            
+            # Draw large suit symbol in center
+            large_suit = self.suit_font_scaled.render(suit_symbol, True, self.WHITE)
+            suit_x = (self.card_width - large_suit.get_width() + 80) // 2
+            suit_y = (self.card_height - large_suit.get_height() + 100) // 2
+            surface.blit(large_suit, (suit_x, suit_y))
+        else:
+            # Draw rank in top-left
+            rank_text = self.rank_font.render(rank_display, True, self.WHITE)
+            surface.blit(rank_text, (10, 4),)
+            
+            # Draw large suit symbol in center
+            large_suit = self.suit_font.render(suit_symbol, True, self.WHITE)
+            suit_x = (self.card_width - large_suit.get_width() + 26) // 2
+            suit_y = (self.card_height - large_suit.get_height() + 30) // 2
+            surface.blit(large_suit, (suit_x, suit_y))
     
     def _draw_card_back(self, surface: pygame.Surface):
         """Draw the back of a card"""
@@ -226,10 +245,10 @@ class Render:
         self.heading_font = pygame.font.SysFont('arial', 48, bold=True)
         self.large_font = pygame.font.SysFont('arial', 36)
         self.medium_font = pygame.font.SysFont('arial', 28)
-        self.small_font = pygame.font.SysFont('arial', 20)
+        self.small_font = pygame.font.SysFont('arial', 24)
         self.tiny_font = pygame.font.SysFont('arial', 16)
         self.stack_font = pygame.font.SysFont('arial', 24, bold=True)
-        self.pot_font = pygame.font.SysFont('arial', 22, bold=True)
+        self.pot_font = pygame.font.SysFont('arial', 28, bold=True)
         
         # Mouse state
         self.mouse_pos = (0, 0)
@@ -248,11 +267,11 @@ class Render:
         """
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                return {'type': 'quit'}
+                return 'quit'
             
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    return {'type': 'quit'}
+                    return 'quit'
             
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 1:  # Left click
@@ -283,11 +302,7 @@ class Render:
             bx, by, bw, bh = bounds
             if bx <= x <= bx + bw and by <= y <= by + bh:
                 # Button was clicked
-                if button_id.startswith('action_'):
-                    action_type = button_id.replace('action_', '')
-                    return {'type': 'action', 'action': action_type}
-                else:
-                    return {'type': button_id}
+                return button_id
         
         return None
     
@@ -342,7 +357,7 @@ class Render:
         self.draw_poker_table()
         
         # Draw pot info
-        self.draw_pot_info(game_state['pot'], game_state.get('main_pot', 0))
+        self.draw_pot_info(game_state)
         
         # Draw players
         self.draw_players(game_state)
@@ -357,42 +372,103 @@ class Render:
         pygame.display.flip()
         self.clock.tick(30)  # 30 FPS
     
-    def get_seat_positions(self):
+    def get_seat_positions(self, num_players):
         """Calculate seat positions around the table"""
         center_x = self.WIDTH // 2
         center_y = self.HEIGHT // 2 - 120
-        
         table_width = min(self.WIDTH * 0.7, 1100)
         table_height = min(self.HEIGHT * 0.45, 380)
-        
         positions = []
-        
         half_w = table_width // 2 + 140
         half_h = table_height // 2 + 120
-        
-        # 9 seat positions arranged around rectangle
-        seat_coords = [
-            (center_x, center_y + half_h + 35, 'bottom'),
-            (center_x - half_w * 0.6, center_y + half_h + 25, 'bottom-left'),
-            (center_x - half_w + 35, center_y + half_h * 0.3, 'left-bottom'),
-            (center_x - half_w + 65, center_y - half_h * 0.5, 'left-top'),
-            (center_x - half_w * 0.3, center_y - half_h * 0.8, 'top'),
-            (center_x + half_w * 0.3, center_y - half_h * 0.8, 'top'),
-            (center_x + half_w - 65, center_y - half_h * 0.5, 'right-top'),
-            (center_x + half_w - 35, center_y + half_h * 0.3, 'right-bottom'),
-            (center_x + half_w * 0.6, center_y + half_h + 25, 'bottom-right'),
-        ]
-        
-        for i, (x, y, side) in enumerate(seat_coords[:9]):
+
+        # 9 seat positions arranged around table
+        if num_players > 8:
+            seat_coords = [
+                (center_x, center_y + half_h + 35, 'bottom'),
+                (center_x - half_w * 0.6, center_y + half_h + 25, 'bottom-left'),
+                (center_x - half_w + 35, center_y + half_h * 0.3, 'left-bottom'),
+                (center_x - half_w + 65, center_y - half_h * 0.5, 'left-top'),
+                (center_x - half_w * 0.3, center_y - half_h * 0.8, 'top'),
+                (center_x + half_w * 0.3, center_y - half_h * 0.8, 'top'),
+                (center_x + half_w - 65, center_y - half_h * 0.5, 'right-top'),
+                (center_x + half_w - 35, center_y + half_h * 0.3, 'right-bottom'),
+                (center_x + half_w * 0.6, center_y + half_h + 25, 'bottom-right'),
+            ]
+        # 8 seat positions arranged around table
+        elif num_players > 7:
+            seat_coords = [
+                (center_x, center_y + half_h + 35, 'bottom'),
+                (center_x - half_w * 0.6, center_y + half_h + 25, 'bottom-left'),
+                (center_x - half_w + 35, center_y + half_h * 0.3, 'left-bottom'),
+                (center_x - half_w + 65, center_y - half_h * 0.5, 'left-top'),
+                (center_x - half_w * 0.3, center_y - half_h * 0.8, 'top'),
+                (center_x + half_w * 0.3, center_y - half_h * 0.8, 'top'),
+                (center_x + half_w - 65, center_y - half_h * 0.5, 'right-top'),
+                (center_x + half_w - 35, center_y + half_h * 0.3, 'right-bottom'),
+            ]
+        # 7 seat positions arranged around table
+        elif num_players > 6:
+            seat_coords = [
+                (center_x, center_y + half_h + 35, 'bottom'),
+                (center_x - half_w * 0.6, center_y + half_h + 25, 'bottom-left'),
+                (center_x - half_w + 35, center_y + half_h * 0.3, 'left-bottom'),
+                (center_x - half_w * 0.3, center_y - half_h * 0.8, 'top'),
+                (center_x + half_w * 0.3, center_y - half_h * 0.8, 'top'),
+                (center_x + half_w - 65, center_y - half_h * 0.5, 'right-top'),
+                (center_x + half_w - 35, center_y + half_h * 0.3, 'right-bottom'),
+            ]
+        # 6 seat positions arranged around table
+        elif num_players > 5:
+            seat_coords = [
+                (center_x, center_y + half_h + 35, 'bottom'),
+                (center_x - half_w * 0.6, center_y + half_h + 25, 'bottom-left'),
+                (center_x - half_w + 35, center_y + half_h * 0.3, 'left-bottom'),
+                (center_x - half_w * 0.3, center_y - half_h * 0.8, 'top'),
+                (center_x + half_w * 0.3, center_y - half_h * 0.8, 'top'),
+                (center_x + half_w - 35, center_y + half_h * 0.3, 'right-bottom'),
+            ]
+        # 5 seat positions arranged around table
+        elif num_players > 4:
+            seat_coords = [
+                (center_x, center_y + half_h + 35, 'bottom'),
+                (center_x - half_w + 35, center_y + half_h * 0.3, 'left-bottom'),
+                (center_x - half_w * 0.3, center_y - half_h * 0.8, 'top'),
+                (center_x + half_w * 0.3, center_y - half_h * 0.8, 'top'),
+                (center_x + half_w - 35, center_y + half_h * 0.3, 'right-bottom'),
+            ]
+        # 4 seat positions arranged around table
+        elif num_players > 3:
+            seat_coords = [
+                (center_x, center_y + half_h + 35, 'bottom'),
+                (center_x - half_w + 35, center_y + half_h * 0.3, 'left-bottom'),
+                (center_x - half_w * 0.3, center_y - half_h * 0.8, 'top'),
+                (center_x + half_w - 35, center_y + half_h * 0.3, 'right-bottom'),
+            ]
+        # 3 seat positions arranged around table
+        elif num_players > 2:
+            seat_coords = [
+                (center_x, center_y + half_h + 35, 'bottom'),
+                (center_x - half_w * 0.3, center_y - half_h * 0.8, 'top'),
+                (center_x + half_w - 35, center_y + half_h * 0.3, 'right-bottom'),
+            ]
+        # 2 seat positions arranged around table
+        else:
+            seat_coords = [
+                (center_x, center_y + half_h + 35, 'bottom'),
+                (center_x - half_w * 0.3, center_y - half_h * 0.8, 'top'),
+            ]
+
+        for i, (x, y, side) in enumerate(seat_coords[:num_players]):
             # Bet offset depends on which side of table
             if side == 'top':
-                bet_offset = (0, 100)
+                bet_offset = (0, 80)
             elif side == 'bottom':
-                bet_offset = (0, -195)
+                bet_offset = (0, -175)
             elif side == 'bottom-left':
-                bet_offset = (70, -190)
+                bet_offset = (70, -170)
             elif side == 'bottom-right':
-                bet_offset = (-70, -190)
+                bet_offset = (-70, -170)
             elif side == 'left-top':
                 bet_offset = (190, 55)
             elif side == 'left-bottom':
@@ -439,11 +515,13 @@ class Render:
         )
         pygame.draw.rect(self.screen, self.BG_COLOR, inner_rect, border_radius=corner_radius)
     
-    def draw_pot_info(self, pot, main_pot):
+    def draw_pot_info(self, game_state):
         """Draw pot information in center of table"""
         center_x = self.WIDTH // 2
-        center_y = self.HEIGHT // 2 - 120 - 30
-        
+        center_y = self.HEIGHT // 2 - 242
+        pot, main_pot, side_pot = game_state.get('pot'), game_state.get('main_pot'), game_state.get('side_pot')
+        side_pot1, side_pot2, side_pot3 = game_state.get('side_pot1'), game_state.get('side_pot2'), game_state.get('side_pot3')
+        side_pot4, side_pot5, side_pot6, side_pot7 = game_state.get('side_pot4'), game_state.get('side_pot5'), game_state.get('side_pot6'), game_state.get('side_pot7')
         # Total pot
         pot_text = f"Total pot: {pot:,} bb"
         pot_surface = self.pot_font.render(pot_text, True, self.WHITE)
@@ -455,12 +533,86 @@ class Render:
         pygame.draw.rect(self.screen, (90, 90, 90), bg_rect, 1, border_radius=5)
         self.screen.blit(pot_surface, pot_rect)
         
-        # Main pot (if different)
-        if main_pot and main_pot != pot:
-            main_text = f"Main pot: {main_pot:,} bb"
+        # Render no other pots
+        if main_pot == pot:
+            return
+        # Render main pot, 8 side pots
+        elif side_pot6:
+            main_text = f"Main pot:{main_pot:,} bb, Side pot: {side_pot:,} bb, +1: {side_pot1:,} bb, +2: {side_pot2:,} bb, +3: {side_pot3:,} bb, +4: {side_pot4:,} bb, +5: {side_pot5:,} bb, +6: {side_pot6:,} bb, +7: {side_pot7:,} bb"
             main_surface = self.small_font.render(main_text, True, self.WHITE)
-            main_rect = main_surface.get_rect(center=(center_x, center_y + 35))
-            
+            main_rect = main_surface.get_rect(center=(center_x, center_y + 38))
+            bg_rect = main_rect.inflate(20, 6)
+            pygame.draw.rect(self.screen, (60, 60, 60), bg_rect, border_radius=5)
+            pygame.draw.rect(self.screen, (90, 90, 90), bg_rect, 1, border_radius=5)
+            self.screen.blit(main_surface, main_rect)
+        # Render main pot, 7 side pots
+        elif side_pot6:
+            main_text = f"Main pot:{main_pot:,} bb, Side pot: {side_pot:,} bb, +1: {side_pot1:,} bb, +2: {side_pot2:,} bb, +3: {side_pot3:,} bb, +4: {side_pot4:,} bb, +5: {side_pot5:,} bb, +6: {side_pot6:,} bb"
+            main_surface = self.small_font.render(main_text, True, self.WHITE)
+            main_rect = main_surface.get_rect(center=(center_x, center_y + 38))
+            bg_rect = main_rect.inflate(20, 6)
+            pygame.draw.rect(self.screen, (60, 60, 60), bg_rect, border_radius=5)
+            pygame.draw.rect(self.screen, (90, 90, 90), bg_rect, 1, border_radius=5)
+            self.screen.blit(main_surface, main_rect)
+        # Render main pot, 6 side pots
+        elif side_pot5:
+            main_text = f"Main pot:{main_pot:,} bb, Side pot: {side_pot:,} bb, +1: {side_pot1:,} bb, +2: {side_pot2:,} bb, +3: {side_pot3:,} bb, +4: {side_pot4:,} bb, +5: {side_pot5:,} bb"
+            main_surface = self.small_font.render(main_text, True, self.WHITE)
+            main_rect = main_surface.get_rect(center=(center_x, center_y + 38))
+            bg_rect = main_rect.inflate(20, 6)
+            pygame.draw.rect(self.screen, (60, 60, 60), bg_rect, border_radius=5)
+            pygame.draw.rect(self.screen, (90, 90, 90), bg_rect, 1, border_radius=5)
+            self.screen.blit(main_surface, main_rect)
+        # Render main pot, 5 side pots
+        elif side_pot4:
+            main_text = f"Main pot:{main_pot:,} bb, Side pot: {side_pot:,} bb, +1: {side_pot1:,} bb, +2: {side_pot2:,} bb, +3: {side_pot3:,} bb, +4: {side_pot4:,} bb"
+            main_surface = self.small_font.render(main_text, True, self.WHITE)
+            main_rect = main_surface.get_rect(center=(center_x, center_y + 38))
+            bg_rect = main_rect.inflate(20, 6)
+            pygame.draw.rect(self.screen, (60, 60, 60), bg_rect, border_radius=5)
+            pygame.draw.rect(self.screen, (90, 90, 90), bg_rect, 1, border_radius=5)
+            self.screen.blit(main_surface, main_rect)
+        # Render main pot, 4 side pots
+        elif side_pot3:
+            main_text = f"Main pot:{main_pot:,} bb, Side pot: {side_pot:,} bb, +1: {side_pot1:,} bb, +2: {side_pot2:,} bb, +3: {side_pot3:,} bb"
+            main_surface = self.small_font.render(main_text, True, self.WHITE)
+            main_rect = main_surface.get_rect(center=(center_x, center_y + 38))
+            bg_rect = main_rect.inflate(20, 6)
+            pygame.draw.rect(self.screen, (60, 60, 60), bg_rect, border_radius=5)
+            pygame.draw.rect(self.screen, (90, 90, 90), bg_rect, 1, border_radius=5)
+            self.screen.blit(main_surface, main_rect)
+        # Render main pot, 3 side pots
+        elif side_pot2:
+            main_text = f"Main pot:{main_pot:,} bb, Side pot: {side_pot:,} bb, +1: {side_pot1:,} bb, +2: {side_pot2:,} bb"
+            main_surface = self.small_font.render(main_text, True, self.WHITE)
+            main_rect = main_surface.get_rect(center=(center_x, center_y + 38))
+            bg_rect = main_rect.inflate(20, 6)
+            pygame.draw.rect(self.screen, (60, 60, 60), bg_rect, border_radius=5)
+            pygame.draw.rect(self.screen, (90, 90, 90), bg_rect, 1, border_radius=5)
+            self.screen.blit(main_surface, main_rect)
+        # Render main pot, 2 side pots
+        elif side_pot1:
+            main_text = f"Main pot:{main_pot:,} bb, Side pot: {side_pot:,} bb, +1: {side_pot1:,} bb"
+            main_surface = self.small_font.render(main_text, True, self.WHITE)
+            main_rect = main_surface.get_rect(center=(center_x, center_y + 38))
+            bg_rect = main_rect.inflate(20, 6)
+            pygame.draw.rect(self.screen, (60, 60, 60), bg_rect, border_radius=5)
+            pygame.draw.rect(self.screen, (90, 90, 90), bg_rect, 1, border_radius=5)
+            self.screen.blit(main_surface, main_rect)
+        # Render main pot, 1 side pots
+        elif side_pot:
+            main_text = f"Main pot:{main_pot:,} bb, Side pot: {side_pot:,} bb"
+            main_surface = self.small_font.render(main_text, True, self.WHITE)
+            main_rect = main_surface.get_rect(center=(center_x, center_y + 38))
+            bg_rect = main_rect.inflate(20, 6)
+            pygame.draw.rect(self.screen, (60, 60, 60), bg_rect, border_radius=5)
+            pygame.draw.rect(self.screen, (90, 90, 90), bg_rect, 1, border_radius=5)
+            self.screen.blit(main_surface, main_rect)
+        # Render main pot
+        elif main_pot:
+            main_text = f"Main pot:{main_pot:,} bb"
+            main_surface = self.small_font.render(main_text, True, self.WHITE)
+            main_rect = main_surface.get_rect(center=(center_x, center_y + 38))
             bg_rect = main_rect.inflate(20, 6)
             pygame.draw.rect(self.screen, (60, 60, 60), bg_rect, border_radius=5)
             pygame.draw.rect(self.screen, (90, 90, 90), bg_rect, 1, border_radius=5)
@@ -468,10 +620,10 @@ class Render:
     
     def draw_players(self, game_state):
         players = game_state.get('players')
-        positions = self.get_seat_positions()
+        positions = self.get_seat_positions(len(players))
         for i, pos in enumerate(positions):
             for player in players:
-                if player['seat'] == i+1:
+                if player['seat'] == i:
                     """Draw a single player seat with cards, stack, and bet"""
                     x, y = pos['x'], pos['y']
                     side = pos['side']
@@ -484,10 +636,10 @@ class Render:
                     self.draw_hole_cards(card_x, card_y, player)
                     
                     # Draw player info box
-                    self.draw_player_info_box(x, y, player, i)
+                    self.draw_player_info_box(x, y, player, i, game_state.get('current_player'))
 
                     # Draw dealer coin
-                    if game_state.get('dealer_position') == player['seat']-1:
+                    if game_state.get('dealer_position') == player['seat']:
                         self.draw_dealer_coin(x - 130, y - 30)
                     
                     # Draw bet
@@ -495,9 +647,6 @@ class Render:
                         bet_x = x + pos['bet_offset'][0]
                         bet_y = y + pos['bet_offset'][1]
                         self.draw_bet_chip(bet_x, bet_y, player['bet'])
-
-            if player['status'] == 'vacant':
-                self.draw_vacant_seat(x, y)
 
     def draw_dealer_coin(self, x, y):
         """Draw the dealer button coin"""
@@ -529,15 +678,19 @@ class Render:
     
     def draw_hole_cards(self, x, y, player):
         """Draw player's hole cards - using CardRenderer for string format cards like 'HA', 'D10'"""
+
+        # don't render cards if player has folded
+        if player.get('status') == 'folded':
+            return
+        
         card_width = 70
-        card_height = 100
         card_spacing = -4
         
         cards = player.get('cards', [None, None, None, None])
         
         # Determine if cards should be face up based on perspective setting
         # 0 = all face up, 1-9 = only that player's cards face up
-        should_show_face_up = (self.perspective == 0) or (self.perspective == player['seat'])
+        should_show_face_up = (self.perspective == 0) or (self.perspective -1 == player['seat'])
         
         for i in range(4):
             card_x = x + i * (card_width + card_spacing)
@@ -548,20 +701,22 @@ class Render:
             
             if has_card and should_show_face_up:
                 # Use CardRenderer to draw actual card from string
-                card_surface = self.card_renderer.render_card(card, face_up=True)
+                card_surface = self.card_renderer.render_card(card, face_up=True, scaled=False)
                 self.screen.blit(card_surface, (card_x, y))
             else:
                 # Draw card back (placeholder)
-                card_surface = self.card_renderer.render_card(None, face_up=False)
+                card_surface = self.card_renderer.render_card(None, face_up=False, scaled=False)
                 self.screen.blit(card_surface, (card_x, y))
     
-    def draw_player_info_box(self, x, y, player, seat_index):
+    def draw_player_info_box(self, x, y, player, seat_index, current_player):
         """Draw player info box with seat number and stack"""
         box_width = 260
         box_height = 84
         
         seat_color = self.SEAT_COLORS[seat_index % len(self.SEAT_COLORS)]
-        bg_color = (240, 240, 235)
+        bg_color = (230, 230, 225)
+        if current_player == seat_index:
+            bg_color = (250, 250, 250)
         
         box_x = x - box_width // 2
         box_y = y - box_height // 2
@@ -569,7 +724,42 @@ class Render:
         # Background
         pygame.draw.rect(self.screen, bg_color,
                         (box_x, box_y, box_width, box_height),
-                        border_radius=box_height // 2)
+                        border_radius=box_height // 2, )
+        
+        # Border gradient on current player
+        if seat_index == current_player:
+            border_surf = pygame.Surface((box_width+8, box_height+8), pygame.SRCALPHA)
+            border_surf2 = pygame.Surface((box_width+16, box_height+16), pygame.SRCALPHA)
+            border_surf3 = pygame.Surface((box_width+24, box_height+24), pygame.SRCALPHA)
+
+            pygame.draw.rect(
+                border_surf,
+                (*(250, 250, 250), 210),   # RGBA → 120 = semi-transparent
+                (0, 0, box_width+8, box_height+8),
+                width=6,
+                border_radius=(box_height+8) // 2
+            )
+            pygame.draw.rect(
+                border_surf2,
+                (*(205, 205, 205), 140),   # RGBA → 120 = semi-transparent
+                (0, 0, box_width+16, box_height+16),
+                width=6,
+                border_radius=(box_height+16) // 2
+            )
+            pygame.draw.rect(
+                border_surf3,
+                (*(205, 205, 205), 70),   # RGBA → 120 = semi-transparent
+                (0, 0, box_width+24, box_height+24),
+                width=6,
+                border_radius=(box_height+24) // 2
+            )
+
+            self.screen.blit(border_surf, (box_x-4, box_y-2))
+            self.screen.blit(border_surf2, (box_x-8, box_y-4))
+            self.screen.blit(border_surf3, (box_x-12, box_y-6))
+
+
+
         
         # Seat number circle
         circle_radius = 36
@@ -579,7 +769,7 @@ class Render:
         pygame.draw.circle(self.screen, seat_color, (int(circle_x), int(circle_y)), circle_radius)
         
         # Seat number
-        seat_num = str(seat_index + 1)
+        seat_num = str(seat_index)
         num_font = pygame.font.SysFont('arial', 28, bold=True)
         num_text = num_font.render(seat_num, True, self.WHITE)
         num_rect = num_text.get_rect(center=(circle_x, circle_y))
@@ -625,13 +815,13 @@ class Render:
         
         # Calculate position for community cards (center of table, slightly below pot)
         center_x = self.WIDTH // 2
-        center_y = self.HEIGHT // 2 - 120 + 40
+        center_y = self.HEIGHT // 2 - 160
         
-        card_width = 70
-        card_spacing = 10
+        card_width = 105
+        card_spacing = 15
         
         # Calculate starting x to center the cards
-        total_width = len(community_cards) * card_width + (len(community_cards) - 1) * card_spacing
+        total_width = 5 * card_width + 4 * card_spacing
         start_x = center_x - total_width // 2
         
         # Draw each community card
@@ -642,7 +832,7 @@ class Render:
             has_card = card is not None and isinstance(card, str) and len(card) >= 2
             
             if has_card:
-                card_surface = self.card_renderer.render_card(card, face_up=True)
+                card_surface = self.card_renderer.render_card(card, face_up=True, scaled=True)
                 self.screen.blit(card_surface, (card_x, center_y))
     
     def draw_control_panel(self):
@@ -679,10 +869,10 @@ class Render:
         # Clear button bounds
         self.button_bounds = {}
         
-        for i, (text, color, hover_color, action_id) in enumerate(buttons):
+        for i, (text, color, hover_color, action) in enumerate(buttons):
             btn_x = start_x + i * (250 + button_spacing)
             self.draw_button(btn_x, button_y, 250, button_height, 
-                           text, color, hover_color, f"action_{action_id}")
+                           text, color, hover_color, action)
         
         # Info text
         info_font = pygame.font.SysFont('arial', 24)
@@ -727,7 +917,7 @@ class Render:
         if self.perspective == 0:
             value_str = "All Cards"
         else:
-            value_str = f"Player {self.perspective}"
+            value_str = f"Player {self.perspective-1}"
         value_text = value_font.render(value_str, True, self.LIGHT_GRAY)
         self.screen.blit(value_text, (slider_x + slider_width + 16, slider_y - 8))
     

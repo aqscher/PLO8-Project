@@ -1,0 +1,143 @@
+{
+    "players": [
+        {
+            "seat": 0,
+            "stack": 100.0,
+            "bet": 0.0,
+            "status": "active",
+            "cards": [
+                null,
+                null,
+                null,
+                null
+            ],
+            "acted": false,
+            "allin": false
+        },
+        {
+            "seat": 1,
+            "stack": 100.0,
+            "bet": 0.0,
+            "status": "active",
+            "cards": [
+                null,
+                null,
+                null,
+                null
+            ],
+            "acted": false,
+            "allin": false
+        },
+        {
+            "seat": 2,
+            "stack": 100.0,
+            "bet": 0.0,
+            "status": "active",
+            "cards": [
+                null,
+                null,
+                null,
+                null
+            ],
+            "acted": false,
+            "allin": false
+        },
+        {
+            "seat": 3,
+            "stack": 100.0,
+            "bet": 0.0,
+            "status": "active",
+            "cards": [
+                null,
+                null,
+                null,
+                null
+            ],
+            "acted": false,
+            "allin": false
+        },
+        {
+            "seat": 4,
+            "stack": 100.0,
+            "bet": 0.0,
+            "status": "active",
+            "cards": [
+                null,
+                null,
+                null,
+                null
+            ],
+            "acted": false,
+            "allin": false
+        },
+        {
+            "seat": 5,
+            "stack": 100.0,
+            "bet": 0.0,
+            "status": "active",
+            "cards": [
+                null,
+                null,
+                null,
+                null
+            ],
+            "acted": false,
+            "allin": false
+        },
+        {
+            "seat": 6,
+            "stack": 100.0,
+            "bet": 0.0,
+            "status": "active",
+            "cards": [
+                null,
+                null,
+                null,
+                null
+            ],
+            "acted": false,
+            "allin": false
+        },
+        {
+            "seat": 7,
+            "stack": 100.0,
+            "bet": 0.0,
+            "status": "active",
+            "cards": [
+                null,
+                null,
+                null,
+                null
+            ],
+            "acted": false,
+            "allin": false
+        },
+        {
+            "seat": 8,
+            "stack": 100.0,
+            "bet": 0.0,
+            "status": "active",
+            "cards": [
+                null,
+                null,
+                null,
+                null
+            ],
+            "acted": false,
+            "allin": false
+        }
+    ],
+    "street": 0,
+    "pot": 0.0,
+    "main_pot": 0.0,
+    "side_pot": 0.0,
+    "side_pot1": 0.0,
+    "side_pot2": 0.0,
+    "side_pot3": 0.0,
+    "side_pot4": 0.0,
+    "side_pot5": 0.0,
+    "side_pot6": 0.0,
+    "community_cards": [],
+    "dealer_position": 7,
+    "current_player": 0
+}
