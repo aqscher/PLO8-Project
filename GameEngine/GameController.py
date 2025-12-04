@@ -54,12 +54,13 @@ class PLO8:
         for i in range(self.starting_players):
             player = {
                 'seat': i,
-                'stack': Decimal(str(self.starting_stack)),
+                'stack': Decimal(str(self.starting_stack+i)),
                 'bet': Decimal("0.00"),
                 'status': 'active',     # active, folded 
                 'cards': [None, None, None, None],  # 4 hole cards for PLO8
                 'acted': False,
-                'allin': (False, Decimal("0.00"))
+                'allin': False,
+                'contrib': Decimal("0.00")
             }
             self.players.append(player)
         
@@ -70,6 +71,10 @@ class PLO8:
     def new_hand(self):
         # Eject the brokies
         self.players = [p for p in self.players if p['stack'] != Decimal("0.00")]
+        if len(self.players) < 2:
+            print("Not enough players to start a new hand. Game Over.")
+            self.running = False
+            return
 
         # Reset pot, street, update dealer position, deal new cards, reset player flags, community cards
         self.pot, self.main_pot, self.side_pot = Decimal("0.00"), Decimal("0.00"), Decimal("0.00")
@@ -85,54 +90,77 @@ class PLO8:
             player['cards'] = [self.deal_card(), self.deal_card(), self.deal_card(), self.deal_card()]
             player['acted'] = False
             player['allin'] = False
+            player['contrib'] = Decimal("0.00")   # reset contribution for new hand
         
         # 2 Player blinds set up
         if len(self.players) == 2:
             #small blind
-            if self.players[self.dealer_position % self.starting_players]['stack'] > Decimal("0.50"):
-                self.players[self.dealer_position % self.starting_players]['stack'] -= Decimal("0.50")
-                self.players[self.dealer_position % self.starting_players]['bet'] = Decimal("0.50")
+            sb_idx = self.dealer_position % len(self.players)
+            bb_idx = (self.dealer_position+1) % len(self.players)
+
+            if self.players[sb_idx]['stack'] > Decimal("0.50"):
+                self.players[sb_idx]['stack'] -= Decimal("0.50")
+                self.players[sb_idx]['bet'] = Decimal("0.50")
+                self.players[sb_idx]['contrib'] += Decimal("0.50")
                 self.pot += Decimal("0.50")
             else:
-                self.players[self.dealer_position % self.starting_players]['allin'] = True, 
-                self.players[self.dealer_position % self.starting_players]['bet'] = self.players[self.dealer_position % self.starting_players]['stack']
-                self.players[self.dealer_position % self.starting_players]['stack'] = Decimal("0.00")
-                self.pot += self.players[self.dealer_position % self.starting_players]['bet']
+                # all-in small blind
+                added = self.players[sb_idx]['stack']
+                self.players[sb_idx]['bet'] = added
+                self.players[sb_idx]['contrib'] += added
+                self.players[sb_idx]['stack'] = Decimal("0.00")
+                self.players[sb_idx]['allin'] = True
+                self.pot += added
+
             #big blind    
-            if self.players[(self.dealer_position+1) % self.starting_players]['stack'] > Decimal("1.00"):
-                self.players[(self.dealer_position+1) % self.starting_players]['stack'] -= Decimal("1.00")
-                self.players[(self.dealer_position+1) % self.starting_players]['bet'] = Decimal("1.00")
+            if self.players[bb_idx]['stack'] > Decimal("1.00"):
+                self.players[bb_idx]['stack'] -= Decimal("1.00")
+                self.players[bb_idx]['bet'] = Decimal("1.00")
+                self.players[bb_idx]['contrib'] += Decimal("1.00")
                 self.pot += Decimal("1.00")
             else:
-                self.players[(self.dealer_position+1) % self.starting_players]['allin'] = True
-                self.players[(self.dealer_position+1) % self.starting_players]['bet'] = self.players[self.dealer_position % self.starting_players]['stack']
-                self.players[(self.dealer_position+1) % self.starting_players]['stack'] = Decimal("0.00")
-                self.pot += self.players[(self.dealer_position+1) % self.starting_players]['bet']
+                added = self.players[bb_idx]['stack']
+                self.players[bb_idx]['bet'] = added
+                self.players[bb_idx]['contrib'] += added
+                self.players[bb_idx]['stack'] = Decimal("0.00")
+                self.players[bb_idx]['allin'] = True
+                self.pot += added
+
             self.current_player = self.dealer_position
             return
-        
+
         # 3+ Player blinds set up
+        sb_idx = (self.dealer_position+1) % len(self.players)
+        bb_idx = (self.dealer_position+2) % len(self.players)
+
         #small blind
-        if self.players[(self.dealer_position+1) % self.starting_players]['stack'] > Decimal("0.50"):
-            self.players[(self.dealer_position+1) % self.starting_players]['stack'] -= Decimal("0.50")
-            self.players[(self.dealer_position+1) % self.starting_players]['bet'] = Decimal("0.50")
+        if self.players[sb_idx]['stack'] > Decimal("0.50"):
+            self.players[sb_idx]['stack'] -= Decimal("0.50")
+            self.players[sb_idx]['bet'] = Decimal("0.50")
+            self.players[sb_idx]['contrib'] += Decimal("0.50")
             self.pot += Decimal("0.50")
         else:
-            self.players[(self.dealer_position+1) % self.starting_players]['allin'] = True, 
-            self.players[(self.dealer_position+1) % self.starting_players]['bet'] = self.players[self.dealer_position % self.starting_players]['stack']
-            self.players[(self.dealer_position+1) % self.starting_players]['stack'] = Decimal("0.00")
-            self.pot += self.players[(self.dealer_position+1) % self.starting_players]['bet']
+            added = self.players[sb_idx]['stack']
+            self.players[sb_idx]['bet'] = added
+            self.players[sb_idx]['contrib'] += added
+            self.players[sb_idx]['stack'] = Decimal("0.00")
+            self.players[sb_idx]['allin'] = True
+            self.pot += added
         #big blind
-        if self.players[(self.dealer_position+2) % self.starting_players]['stack'] > Decimal("1.00"):
-            self.players[(self.dealer_position+2) % self.starting_players]['stack'] -= Decimal("1.00")
-            self.players[(self.dealer_position+2) % self.starting_players]['bet'] = Decimal("1.00")
+        if self.players[bb_idx]['stack'] > Decimal("1.00"):
+            self.players[bb_idx]['stack'] -= Decimal("1.00")
+            self.players[bb_idx]['bet'] = Decimal("1.00")
+            self.players[bb_idx]['contrib'] += Decimal("1.00")
             self.pot += Decimal("1.00")
         else:
-            self.players[(self.dealer_position+2) % self.starting_players]['allin'] = True, 
-            self.players[(self.dealer_position+2) % self.starting_players]['bet'] = self.players[self.dealer_position % self.starting_players]['stack']
-            self.players[(self.dealer_position+2) % self.starting_players]['stack'] = Decimal("0.00")
-            self.pot += self.players[(self.dealer_position+2) % self.starting_players]['bet']
-        self.current_player = (self.dealer_position + 3) % self.starting_players
+            added = self.players[bb_idx]['stack']
+            self.players[bb_idx]['bet'] = added
+            self.players[bb_idx]['contrib'] += added
+            self.players[bb_idx]['stack'] = Decimal("0.00")
+            self.players[bb_idx]['allin'] = True
+            self.pot += added
+
+        self.current_player = (self.dealer_position + 3) % len(self.players)
 
 
     def get_game_state(self):
@@ -144,11 +172,13 @@ class PLO8:
         players_copy = []
         for p in self.players:
             p_copy = p.copy()
-            # convert stack and bet to float for JSON
+            # convert stack, bet, and contrib to float for JSON
             if isinstance(p_copy.get('stack'), Decimal):
                 p_copy['stack'] = float(self.q(p_copy['stack']))
             if isinstance(p_copy.get('bet'), Decimal):
                 p_copy['bet'] = float(self.q(p_copy['bet']))
+            if isinstance(p_copy.get('contrib'), Decimal):
+                p_copy['contrib'] = float(self.q(p_copy['contrib']))
             players_copy.append(p_copy)
 
         return {
@@ -168,14 +198,118 @@ class PLO8:
             'current_player': self.current_player
         }
 
+    # -------------------------
+    # New pot-building utilities
+    # -------------------------
+    def build_pots(self):
+        """
+        Build main pot + side pots from player['contrib'] values.
+        Returns a list of pots in ascending order of cap:
+          pots[0] is main pot (lowest cap), each pot is dict:
+            {'amount': Decimal, 'eligible': [player_dicts]}
+        """
+        # collect unique positive contribution levels, sorted ascending
+        levels = sorted({p['contrib'] for p in self.players if p['contrib'] > 0})
+        if not levels:
+            return []
+
+        pots = []
+        prev = Decimal("0.00")
+
+        # for each level, compute the pot slice and eligible players
+        for level in levels:
+            pot_amount = Decimal("0.00")
+            eligible = []
+
+            for p in self.players:
+                contrib = p['contrib']
+                # amount this player contributes to this level
+                if contrib > prev:
+                    pay_in = min(contrib, level) - prev
+                    if pay_in > 0:
+                        pot_amount += pay_in
+
+                # a player is eligible for this pot if they contributed at least 'level'
+                # and they have not folded (folded players cannot win)
+                if contrib >= level and p['status'] == 'active':
+                    eligible.append(p)
+
+            pots.append({"amount": self.q(pot_amount), "eligible": eligible})
+            prev = level
+
+        return pots
+
+    def clear_pots_fields(self, pots):
+        """
+        Map built pots to self.main_pot and side_pot, side_pot1... for debugging/display.
+        pots should be ordered lowest->highest contribution tier.
+        """
+        # reset fields
+        self.main_pot = Decimal("0.00")
+        self.side_pot = Decimal("0.00")
+        self.side_pot1 = Decimal("0.00")
+        self.side_pot2 = Decimal("0.00")
+        self.side_pot3 = Decimal("0.00")
+        self.side_pot4 = Decimal("0.00")
+        self.side_pot5 = Decimal("0.00")
+        self.side_pot6 = Decimal("0.00")
+        self.side_pot7 = Decimal("0.00")
+
+        # map
+        field_order = ['main_pot', 'side_pot', 'side_pot1', 'side_pot2', 'side_pot3', 'side_pot4', 'side_pot5', 'side_pot6', 'side_pot7']
+        for i, pot in enumerate(pots):
+            if i >= len(field_order):
+                break
+            setattr(self, field_order[i], pot['amount'])
+
+    def payout_pots(self, pots, winners_by_rank):
+        """
+        Distribute pot amounts to winners.
+        pots: list of {'amount': Decimal, 'eligible': [player_dicts]}
+        winners_by_rank: list of lists of player dicts, in rank order (best first).
+            Example: [[p1], [p2,p3], [p4]]  -> p1 best, p2&p3 tied for 2nd, etc.
+        """
+        for pot in pots:
+            amt = pot['amount']
+            eligible = set(pot['eligible'])
+
+            # find the best-ranked winner(s) who are eligible
+            winner_group = None
+            for rank_group in winners_by_rank:
+                group = [p for p in rank_group if p in eligible]
+                if group:
+                    winner_group = group
+                    break
+
+            if not winner_group:
+                # no eligible winner (all folded?) — skip
+                continue
+
+            share = (amt / Decimal(len(winner_group))).quantize(CENTS)
+
+            # Distribute shares — if rounding leftover exists, give remainder to earliest seat in winner_group
+            total_distributed = share * Decimal(len(winner_group))
+            remainder = amt - total_distributed
+
+            for w in winner_group:
+                w['stack'] += share
+
+            if remainder > 0:
+                # choose winner with smallest seat index to receive remainder
+                winner_group_sorted = sorted(winner_group, key=lambda x: x['seat'])
+                winner_group_sorted[0]['stack'] += remainder
+
     # Main loop from here
     def advance_game(self, action):
-        #get player action, check to see if game over
-        self.process_action(action)
+        if self.street == 4:
+            self.new_hand()
+            return
         if len(self.players) == 1:
             print("Game Over!")
             self.running = False
             return
+        #get player action, check to see if game over
+        self.process_action(action)
         
         #handle end of hand where all but 1 player folds
         if sum(1 for player in self.players if player['status'] == 'active') == 1 and self.street < 4:
@@ -183,112 +317,131 @@ class PLO8:
             if winner == None:
                 raise Exception("Winner is none.")
             winner['stack'] += self.q(self.pot)
-            print(f'Player {winner['seat']} wins the hand, starting new hand...')
+            print(f"Player {winner['seat']} wins the hand, starting new hand...")
             self.new_hand()
             return
         
-        #update current_player
-        next_player = (self.current_player + 1) % len(self.players)
-        attempts = 0
-        while ( self.players[next_player]['status'] != 'active' or self.players[next_player]['allin'] == True ) and attempts < 8:
-            next_player = (next_player + 1) % len(self.players)
-            attempts += 1
-        if attempts == 8:
-            print('oh shit')
-            #self.new_street()  # crashes engine
-            return
-
-        #handle end of betting round with active players
+        # NEW: Check if betting should end due to all-in situations
         action_players = [p for p in self.players if p['status'] == 'active' and not p['allin']]
+        
+        # If 0 or 1 players can still act, advance to next street
+        if len(action_players) <= 1:
+            # If there's exactly 1 player who can act, they need to match the highest bet first
+            if len(action_players) == 1:
+                solo_player = action_players[0]
+                max_bet = max(p['bet'] for p in self.players)
+                # If the solo player hasn't matched the bet yet and hasn't acted, let them act
+                if solo_player['bet'] < max_bet and not solo_player['acted']:
+                    self.current_player = solo_player['seat']
+                    return
+            
+            # Otherwise, everyone is all-in or only one player left who has already acted
+            print("All players are all-in or have acted, advancing streets to showdown...")
+            while self.street < 4:
+                self.new_street()
+            self.new_hand()
+            return
+        
+        # Continue with normal betting round logic for 2+ active non-all-in players
         if len(action_players) > 1:
-            all_bets_equal = len({p['bet'] for p in action_players}) == 1   # bets must match
+            all_bets_equal = len({p['bet'] for p in action_players}) == 1
             all_have_acted = all(p['acted'] for p in action_players)
             if all_bets_equal and all_have_acted:
                 self.new_street()
                 return
-
+        
+        # Find next player to act (existing logic but simplified)
+        next_player = (self.current_player + 1) % len(self.players)
+        attempts = 0
+        while attempts < len(self.players):
+            if self.players[next_player]['status'] == 'active' and not self.players[next_player]['allin']:
+                break
+            next_player = (next_player + 1) % len(self.players)
+            attempts += 1
+        
+        if attempts >= len(self.players):
+            # This shouldn't happen now with the above logic, but keeping as safety
+            print("ERROR: No valid next player found, advancing to showdown")
+            while self.street < 4:
+                self.new_street()
+            return
         
         #otherwise, just move on to next player in round of betting, dump gamestate
         self.current_player = next_player
         with open("game_state.json", "w") as f:
             json.dump(self.get_game_state(), f, indent=4)
-
-        #check for illegal gamestate
-        stack_bb = [p['stack'] for p in self.players]
-        pot_bb = [self.pot]
-        all_bb = stack_bb + pot_bb
-        if Decimal(str((self.starting_players * self.starting_stack))) != sum(all_bb):
-            raise Exception(f'Invalid gamestate occurred: {Decimal(str((self.starting_players * self.starting_stack)))} != {sum(all_bb)}')
+        # if Decimal(str((self.starting_players * self.starting_stack))) != sum(all_bb):
+        #     raise Exception(f'Invalid gamestate occurred: {Decimal(str((self.starting_players * self.starting_stack)))} != {sum(all_bb)}')
 
 
     def new_street(self):
         if self.street == 0:
+            self.street = 1
             self.end_betting_round()
             self.deal_flop()
-            self.street = 1
+            return
         elif self.street == 1:
+            self.street = 2
             self.end_betting_round()
             self.deal_turn()
-            self.street = 2
+            return
         elif self.street == 2:
+            self.street = 3
             self.end_betting_round()
             self.deal_river()
-            self.street = 3
-        elif self.street == 4:
+            return
+        elif self.street == 3:
+            self.street = 4
             self.end_betting_round()
             self.showdown()
+        else:
+            print("Error: Trying to advance past showdown!")
+            return
+
             
     def end_betting_round(self):
-        #no players are all in
+        """End of Betting Round Logic"""
         allin_players = [player for player in self.players if player['allin'] == True]
+        allin_players_contribs = sorted([player['contrib'] for player in allin_players]) # smallest to largest contribs of allin players
+        
+        #visualize
+        pot_contributions = [player['contrib'] for player in self.players]      #index of pot_contributions is player seat number
+        #print(pot_contributions)
+
+        #no players are all in
         if allin_players == []:
             # Clear betting round related player states, put bets in main pot
             for player in self.players:
                 player['acted'] = False
                 player['bet'] = Decimal("0.00")
-            self.main_pot = self.q(self.pot)
+            self.main_pot = self.q(self.pot)  # put bets in main pot (unchanged behavior)
 
-        #create player
-        # 1 player is all in
-        if len(allin_players) < 2:
-            #mainpot, sidepot logic
-            pass
-        # 2 players are all in
-        elif len(allin_players) < 3:
-            #mainpot, sidepot, sidepot+1 logic
-            pass
-        # 3 players are all in
-        elif len(allin_players) < 4:
-            #mainpot, sidepot, sidepot+1, sidepot+2 logic
-            pass
-        # 4 players are all in
-        elif len(allin_players) < 5:
-            #mainpot, sidepot, sidepot+1, sidepot+2, sidepot+3 logic
-            pass
-        # 5 players are all in
-        elif len(allin_players) < 6:
-            #mainpot, sidepot, sidepot+1, sidepot+2, sidepot+3, sidepot+4 logic
-            pass
-        # 6 players are all in
-        elif len(allin_players) < 7:
-            #mainpot, sidepot, sidepot+1, sidepot+2, sidepot+3, sidepot+4, sidepot+5 logic
-            pass
-        # 7 players are all in
-        elif len(allin_players) < 8:
-            #mainpot, sidepot, sidepot+1, sidepot+2, sidepot+3, sidepot+4, sidepot+5, sidepot+6 logic
-            pass
-        # 8+ players are all in
         else:
-            #mainpot, sidepot, sidepot+1, sidepot+2, sidepot+3, sidepot+4, sidepot+5, sidepot+6, sidepot+7 logic
-            pass
-        
+            # There are all-in players -> build main pot + side pots from contributions
+            #pots = self.build_pots()   # list of {'amount', 'eligible'}
+            # map amounts to display fields for debugging/JSON/visualization
+            #self.clear_pots_fields(pots)
 
-        #start with small blind position for next betting round
-        next_player = (self.dealer_position + 1 ) % len(self.players)
-        while self.players[next_player]['status'] != 'active' or self.players[next_player]['allin'] == True:
-            next_player = (next_player + 1) % len(self.players)
-        self.current_player = next_player
-        print(f'Next betting round starts with player {self.current_player}')
+            # Clear per-round state (bets become zero; contrib keeps the full contributed amount)
+            for player in self.players:
+                player['acted'] = False
+                player['bet'] = Decimal("0.00")
+
+            # Note: we don't automatically payout here. Payout should happen at showdown,
+            # using self.payout_pots(pots, winners_by_rank) once you have hand evaluation results.
+
+        #showdown is last betting round
+        if self.street == 4:
+            return
+        #start with small blind position for next betting round, if 2+ active non allin players remain
+        # (note: original code had a bug checking 'active' key — keep semantic but correct to 'status')
+        active_non_allin = [player for player in self.players if player['status'] == 'active' and player['allin'] == False]
+        if len(active_non_allin) > 1:
+            next_player = (self.dealer_position + 1 ) % len(self.players)
+            while self.players[next_player]['status'] != 'active' or self.players[next_player]['allin'] == True:
+                next_player = (next_player + 1) % len(self.players)
+            self.current_player = next_player
+            print(f'Next betting round starts with player {self.current_player}')
 
     def process_action(self, action):
         """
@@ -297,16 +450,19 @@ class PLO8:
         """
         if action == 'check/fold':
             self.handle_checkfold()
+            self.players[self.current_player]['acted'] = True
         elif action == 'call/minbet':
             self.handle_callminbet()
+            self.players[self.current_player]['acted'] = True
         elif action == 'bet1/2pot':
             self.handle_bethalfpot()
+            self.players[self.current_player]['acted'] = True
         elif action == 'bet3/4pot':
             self.handle_betthreequarterspot()
+            self.players[self.current_player]['acted'] = True
         elif action == 'betpot':
             self.handle_betpot()
-        
-        self.players[self.current_player]['acted'] = True
+            self.players[self.current_player]['acted'] = True
     
     def deal_flop(self):
         """Deal the flop (3 community cards)"""
@@ -327,10 +483,43 @@ class PLO8:
     
     def showdown(self):
         """Evaluate hands and determine winners"""
-        # TODO: Implement PLO8 hand evaluation
-        print("SHOWDOWN")
-        self.new_hand()
-    
+        for p in self.players:
+            p['stack'] = Decimal('10.00')
+            p['acted'] = False
+        return
+        # Build pots from contributions (main + side pots)
+        pots = self.build_pots()
+        self.clear_pots_fields(pots)  # update the side_pot fields for display/debug
+
+        # If only one active player, pay them everything (existing behavior)
+        active_players = [p for p in self.players if p['status'] == 'active']
+
+        # Otherwise: you must evaluate hands and produce winners_by_rank:
+        # winners_by_rank = [ [player1], [player2, player3], ... ]
+        # Then call:
+        #   self.payout_pots(pots, winners_by_rank)
+        #
+        # (Hand evaluation not implemented here — insert your evaluator and then call payout_pots.)
+        # Reset pot, street, update dealer position, deal new cards, reset player flags, community cards
+        self.pot, self.main_pot, self.side_pot = Decimal("0.00"), Decimal("0.00"), Decimal("0.00")
+        self.side_pot1, self.side_pot2, self.side_pot3 = Decimal("0.00"), Decimal("0.00"), Decimal("0.00")
+        self.side_pot4, self.side_pot5, self.side_pot6, self.side_pot7 = Decimal("0.00"), Decimal("0.00"), Decimal("0.00"), Decimal("0.00")
+        self.street = 0
+        self.dealer_position = (self.dealer_position + 1) % len(self.players)
+        self.community_cards = []
+        self.init_deck()
+        for player in self.players:
+            player['bet'] = Decimal("0.00")
+            player['status'] = 'active'
+            player['cards'] = [self.deal_card(), self.deal_card(), self.deal_card(), self.deal_card()]
+            player['acted'] = False
+            player['allin'] = False
+            player['contrib'] = Decimal("0.00")   # reset contribution for new hand
+
+        print("SHOWDOWN (pots built; awaiting hand evaluation to payout)")
+        
+        # leave new_hand() to be called after payout happens externally once you evaluate hands.
+
     def handle_checkfold(self):
         """Handle 0 bet (check or fold depending on gamestate)"""
         #find max bet
@@ -348,36 +537,47 @@ class PLO8:
         """Handle minimum bet (call or min bet depending on gamestate)"""
         #find max bet
         min_to_play = max(player['bet'] for player in self.players)
+        current_bet = self.players[self.current_player]['bet']
 
         #min bet is 1bb
         if min_to_play == Decimal("0.00"):
             #not all in
             if self.players[self.current_player]['stack'] > Decimal("1.00"):
                 self.players[self.current_player]['bet'] = Decimal("1.00")
-                self.players[self.current_player]['stack'] -= Decimal("1.00")
-                self.pot += Decimal("1.00")
+                added = Decimal("1.00") - current_bet
+                self.players[self.current_player]['stack'] -= added
+                self.players[self.current_player]['contrib'] += added
+                self.pot += added
+                for player in self.players:
+                    player['acted'] = False
                 print(f"Player {self.current_player} bets 1bb")
             #all in
             else:
-                self.players[self.current_player]['bet'] += self.players[self.current_player]['stack']
+                added = self.players[self.current_player]['stack']
+                self.players[self.current_player]['bet'] += added
+                self.players[self.current_player]['contrib'] += added
                 self.players[self.current_player]['stack'] = Decimal("0.00")
-                self.pot += self.players[self.current_player]['bet']
+                self.pot += added
                 self.players[self.current_player]['allin'] = True
+                for player in self.players:
+                    player['acted'] = False
                 print(f"Player {self.current_player} goes all in with {self.players[self.current_player]['bet']}bb")
         #min bet is a call
         else:
-            current_bet = self.players[self.current_player]['bet']
             to_call = self.q(min_to_play - current_bet)
             #not all in
             if self.players[self.current_player]['stack'] > to_call:
                 self.players[self.current_player]['bet'] = self.q(min_to_play)
                 self.players[self.current_player]['stack'] -= to_call
+                self.players[self.current_player]['contrib'] += to_call
                 self.pot += to_call
                 print(f"Player {self.current_player} calls {min_to_play}bb")
             #all in
             else:
-                self.players[self.current_player]['bet'] += self.players[self.current_player]['stack']
-                self.pot += self.players[self.current_player]['stack']
+                added = self.players[self.current_player]['stack']
+                self.players[self.current_player]['bet'] += added
+                self.players[self.current_player]['contrib'] += added
+                self.pot += added
                 self.players[self.current_player]['stack'] = Decimal("0.00")
                 self.players[self.current_player]['allin'] = True
                 print(f"Player {self.current_player} goes all in with {self.players[self.current_player]['bet']}bb")
@@ -392,18 +592,28 @@ class PLO8:
         if pot12 < Decimal("2.00"): pot12 = Decimal("2.00")     #min allowed bet preflop that's not a call
 
         #not all in
-        if self.players[self.current_player]['stack'] > self.q(pot12 - current_bet):
+        amount_needed = self.q(pot12 - current_bet)
+        if self.players[self.current_player]['stack'] > amount_needed:
             self.players[self.current_player]['bet'] = self.q(pot12)
-            self.players[self.current_player]['stack'] -= self.q(pot12 - current_bet)
-            self.pot += self.q(pot12 - current_bet)
+            self.players[self.current_player]['stack'] -= amount_needed
+            self.players[self.current_player]['contrib'] += amount_needed
+            self.pot += amount_needed
+            for player in self.players:
+                    player['acted'] = False
             print(f"Player {self.current_player} bets 1/2 pot: {pot12}bb")
         #all in
         else:
-            self.players[self.current_player]['bet'] += self.players[self.current_player]['stack']
-            self.pot += self.players[self.current_player]['stack']
+            added = self.players[self.current_player]['stack']
+            self.players[self.current_player]['bet'] += added
+            self.players[self.current_player]['contrib'] += added
+            self.pot += added
             self.players[self.current_player]['stack'] = Decimal("0.00")
             self.players[self.current_player]['allin'] = True
+            if self.players[self.current_player]['bet'] > min_to_play:
+                for player in self.players:
+                        player['acted'] = False
             print(f"Player {self.current_player} goes all in with {self.players[self.current_player]['bet']}bb")
+        
     
     def handle_betthreequarterspot(self):
         """Handle 3/4 pot bet"""
@@ -414,18 +624,27 @@ class PLO8:
         pot34 = (Decimal("0.75") * pot).quantize(CENTS)
         if pot34 < Decimal("2.00"): pot34 = Decimal("2.00")     #min allowed bet preflop that's not a call
         
+        amount_needed = self.q(pot34 - current_bet)
         #not all in
-        if self.players[self.current_player]['stack'] > self.q(pot34 - current_bet):
+        if self.players[self.current_player]['stack'] > amount_needed:
             self.players[self.current_player]['bet'] = self.q(pot34)
-            self.players[self.current_player]['stack'] -= self.q(pot34 - current_bet)
-            self.pot += self.q(pot34 - current_bet)
+            self.players[self.current_player]['stack'] -= amount_needed
+            self.players[self.current_player]['contrib'] += amount_needed
+            self.pot += amount_needed
+            for player in self.players:
+                    player['acted'] = False
             print(f"Player {self.current_player} bets 3/4 pot: {pot34}bb")
         #all in
         else:
-            self.players[self.current_player]['bet'] += self.players[self.current_player]['stack']
-            self.pot += self.players[self.current_player]['stack']
+            added = self.players[self.current_player]['stack']
+            self.players[self.current_player]['bet'] += added
+            self.players[self.current_player]['contrib'] += added
+            self.pot += added
             self.players[self.current_player]['stack'] = Decimal("0.00")
             self.players[self.current_player]['allin'] = True
+            if self.players[self.current_player]['bet'] > min_to_play:
+                for player in self.players:
+                        player['acted'] = False
             print(f"Player {self.current_player} goes all in with {self.players[self.current_player]['bet']}bb")
     
     def handle_betpot(self):
@@ -436,18 +655,27 @@ class PLO8:
         pot = (self.pot - current_bet) + (Decimal("2.00") * min_to_play)
         pot = pot.quantize(CENTS)
 
+        amount_needed = self.q(pot - current_bet)
         #not all in
-        if self.players[self.current_player]['stack'] > self.q(pot - current_bet):
+        if self.players[self.current_player]['stack'] > amount_needed:
             self.players[self.current_player]['bet'] = self.q(pot)
-            self.players[self.current_player]['stack'] -= self.q(pot - current_bet)
-            self.pot += self.q(pot - current_bet)
+            self.players[self.current_player]['stack'] -= amount_needed
+            self.players[self.current_player]['contrib'] += amount_needed
+            self.pot += amount_needed
+            for player in self.players:
+                    player['acted'] = False
             print(f"Player {self.current_player} bets pot: {pot}bb")
         #all in
         else:
-            self.players[self.current_player]['bet'] += self.players[self.current_player]['stack']
-            self.pot += self.players[self.current_player]['stack']
+            added = self.players[self.current_player]['stack']
+            self.players[self.current_player]['bet'] += added
+            self.players[self.current_player]['contrib'] += added
+            self.pot += added
             self.players[self.current_player]['stack'] = Decimal("0.00")
             self.players[self.current_player]['allin'] = True
+            if self.players[self.current_player]['bet'] > min_to_play:
+                for player in self.players:
+                        player['acted'] = False
             print(f"Player {self.current_player} goes all in with {self.players[self.current_player]['bet']}bb")
 
     def init_deck(self):

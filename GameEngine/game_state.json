@@ -2,133 +2,142 @@
     "players": [
         {
             "seat": 0,
-            "stack": 0.0,
-            "bet": 100.0,
+            "stack": 9.0,
+            "bet": 1.0,
             "status": "active",
             "cards": [
-                "HJ",
-                "C8",
-                "C6",
-                "C7"
+                "D3",
+                "SJ",
+                "DQ",
+                "CA"
             ],
-            "acted": true,
-            "allin": true
+            "acted": false,
+            "allin": false,
+            "contrib": 1.0
         },
         {
             "seat": 1,
-            "stack": 0.0,
-            "bet": 100.0,
-            "status": "active",
+            "stack": 10.0,
+            "bet": 0.0,
+            "status": "folded",
             "cards": [
-                "D10",
-                "D8",
-                "HQ",
-                "H7"
+                "C5",
+                "S3",
+                "SA",
+                "CQ"
             ],
             "acted": true,
-            "allin": true
+            "allin": false,
+            "contrib": 0.0
         },
         {
             "seat": 2,
-            "stack": 0.0,
-            "bet": 100.0,
-            "status": "active",
+            "stack": 10.0,
+            "bet": 0.0,
+            "status": "folded",
             "cards": [
-                "C10",
-                "S2",
+                "H5",
                 "S10",
-                "S8"
+                "HK",
+                "HQ"
             ],
             "acted": true,
-            "allin": true
+            "allin": false,
+            "contrib": 0.0
         },
         {
             "seat": 3,
-            "stack": 0.0,
-            "bet": 100.0,
-            "status": "active",
+            "stack": 10.0,
+            "bet": 0.0,
+            "status": "folded",
             "cards": [
-                "CQ",
-                "SK",
-                "DK",
-                "C3"
+                "H7",
+                "HJ",
+                "H8",
+                "C8"
             ],
             "acted": true,
-            "allin": true
+            "allin": false,
+            "contrib": 0.0
         },
         {
             "seat": 4,
-            "stack": 59.0,
-            "bet": 41.0,
-            "status": "active",
+            "stack": 10.0,
+            "bet": 0.0,
+            "status": "folded",
             "cards": [
-                "S3",
-                "H5",
-                "C9",
-                "S7"
+                "D2",
+                "HA",
+                "S6",
+                "C7"
             ],
             "acted": true,
-            "allin": false
+            "allin": false,
+            "contrib": 0.0
         },
         {
             "seat": 5,
-            "stack": 0.0,
-            "bet": 100.0,
-            "status": "active",
+            "stack": 10.0,
+            "bet": 0.0,
+            "status": "folded",
             "cards": [
-                "C5",
-                "S5",
-                "D5",
-                "H10"
+                "SK",
+                "C2",
+                "DJ",
+                "H9"
             ],
             "acted": true,
-            "allin": true
+            "allin": false,
+            "contrib": 0.0
         },
         {
             "seat": 6,
-            "stack": 0.0,
-            "bet": 100.0,
+            "stack": 9.0,
+            "bet": 1.0,
             "status": "active",
             "cards": [
-                "DQ",
-                "SA",
                 "S4",
-                "S9"
+                "S9",
+                "C6",
+                "CJ"
             ],
             "acted": true,
-            "allin": true
+            "allin": false,
+            "contrib": 1.0
         },
         {
             "seat": 7,
-            "stack": 0.0,
-            "bet": 100.0,
+            "stack": 9.0,
+            "bet": 1.0,
             "status": "active",
             "cards": [
-                "CK",
-                "D4",
-                "SQ",
-                "H8"
+                "S7",
+                "C3",
+                "C10",
+                "D8"
             ],
             "acted": true,
-            "allin": true
+            "allin": false,
+            "contrib": 1.0
         },
         {
             "seat": 8,
-            "stack": 0.0,
-            "bet": 100.0,
+            "stack": 9.0,
+            "bet": 1.0,
             "status": "active",
             "cards": [
-                "H4",
-                "D2",
-                "HA",
-                "C2"
+                "H6",
+                "H2",
+                "C4",
+                "D6"
             ],
             "acted": true,
-            "allin": true
+            "allin": false,
+            "contrib": 1.0
         }
     ],
     "street": 0,
-    "pot": 841.0,
+    "pot": 4.0,
     "main_pot": 0.0,
     "side_pot": 0.0,
     "side_pot1": 0.0,
@@ -138,6 +147,6 @@
     "side_pot5": 0.0,
     "side_pot6": 0.0,
     "community_cards": [],
-    "dealer_position": 8,
-    "current_player": 4
+    "dealer_position": 7,
+    "current_player": 0
 }
