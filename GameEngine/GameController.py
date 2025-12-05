@@ -7,6 +7,8 @@ import random
 import json
 from decimal import Decimal, getcontext, ROUND_HALF_UP
 
+import handEvaluator
+
 # Decimal configuration
 getcontext().prec = 28
 getcontext().rounding = ROUND_HALF_UP
@@ -54,7 +56,7 @@ class PLO8:
         for i in range(self.starting_players):
             player = {
                 'seat': i,
-                'stack': Decimal(str(self.starting_stack+i)),
+                'stack': Decimal(str(self.starting_stack)),
                 'bet': Decimal("0.00"),
                 'status': 'active',     # active, folded 
                 'cards': [None, None, None, None],  # 4 hole cards for PLO8
@@ -301,8 +303,9 @@ class PLO8:
 
     # Main loop from here
     def advance_game(self, action):
-        if self.street == 4:
+        if self.street >= 4:
             self.new_hand()
+            print('wasp5')
             return
         if len(self.players) == 1:
             print("Game Over!")
@@ -348,6 +351,9 @@ class PLO8:
             all_have_acted = all(p['acted'] for p in action_players)
             if all_bets_equal and all_have_acted:
                 self.new_street()
+                if self.street < 4:
+                    return
+                self.new_hand()
                 return
         
         # Find next player to act (existing logic but simplified)
@@ -364,14 +370,16 @@ class PLO8:
             print("ERROR: No valid next player found, advancing to showdown")
             while self.street < 4:
                 self.new_street()
+                print('wasp1')
             return
         
         #otherwise, just move on to next player in round of betting, dump gamestate
         self.current_player = next_player
         with open("game_state.json", "w") as f:
             json.dump(self.get_game_state(), f, indent=4)
-        # if Decimal(str((self.starting_players * self.starting_stack))) != sum(all_bb):
-        #     raise Exception(f'Invalid gamestate occurred: {Decimal(str((self.starting_players * self.starting_stack)))} != {sum(all_bb)}')
+        all_bb = self.pot + sum([p['stack'] for p in self.players])
+        if Decimal(str((self.starting_players * self.starting_stack))) != all_bb:
+            raise Exception(f'Invalid gamestate occurred: {Decimal(str((self.starting_players * self.starting_stack)))} != {sum(all_bb)}')
 
 
     def new_street(self):
@@ -434,7 +442,6 @@ class PLO8:
         if self.street == 4:
             return
         #start with small blind position for next betting round, if 2+ active non allin players remain
-        # (note: original code had a bug checking 'active' key — keep semantic but correct to 'status')
         active_non_allin = [player for player in self.players if player['status'] == 'active' and player['allin'] == False]
         if len(active_non_allin) > 1:
             next_player = (self.dealer_position + 1 ) % len(self.players)
@@ -483,42 +490,33 @@ class PLO8:
     
     def showdown(self):
         """Evaluate hands and determine winners"""
-        for p in self.players:
-            p['stack'] = Decimal('10.00')
-            p['acted'] = False
-        return
+        print("SHOWDOWN")
         # Build pots from contributions (main + side pots)
         pots = self.build_pots()
         self.clear_pots_fields(pots)  # update the side_pot fields for display/debug
+        for p in self.players:
+            p['acted'] = True
 
-        # If only one active player, pay them everything (existing behavior)
-        active_players = [p for p in self.players if p['status'] == 'active']
-
-        # Otherwise: you must evaluate hands and produce winners_by_rank:
-        # winners_by_rank = [ [player1], [player2, player3], ... ]
-        # Then call:
-        #   self.payout_pots(pots, winners_by_rank)
-        #
-        # (Hand evaluation not implemented here — insert your evaluator and then call payout_pots.)
-        # Reset pot, street, update dealer position, deal new cards, reset player flags, community cards
-        self.pot, self.main_pot, self.side_pot = Decimal("0.00"), Decimal("0.00"), Decimal("0.00")
-        self.side_pot1, self.side_pot2, self.side_pot3 = Decimal("0.00"), Decimal("0.00"), Decimal("0.00")
-        self.side_pot4, self.side_pot5, self.side_pot6, self.side_pot7 = Decimal("0.00"), Decimal("0.00"), Decimal("0.00"), Decimal("0.00")
-        self.street = 0
-        self.dealer_position = (self.dealer_position + 1) % len(self.players)
-        self.community_cards = []
-        self.init_deck()
-        for player in self.players:
-            player['bet'] = Decimal("0.00")
-            player['status'] = 'active'
-            player['cards'] = [self.deal_card(), self.deal_card(), self.deal_card(), self.deal_card()]
-            player['acted'] = False
-            player['allin'] = False
-            player['contrib'] = Decimal("0.00")   # reset contribution for new hand
-
-        print("SHOWDOWN (pots built; awaiting hand evaluation to payout)")
+        if len(self.players) > 2:
+            print('Still need to add logic for 3+ player hand evaluation at showdown!')
+            for p in self.players:
+                p['stack'] = Decimal('10.00')
+                p['acted'] = True
+            # winners_by_rank = [ [player1], [player2, player3], ... ]
+            # Then call:
+            #   self.payout_pots(pots, winners_by_rank)
+            return
         
-        # leave new_hand() to be called after payout happens externally once you evaluate hands.
+        else:
+            winners_of_hi = handEvaluator.evalHi(self.get_game_state())    #returns list of players with best hand, typically one player
+            winners_of_lo = handEvaluator.evalLo(self.get_game_state())    #returns [] if there are no low hands made, otherwise same as ^^
+            if winners_of_lo == []:
+                self.payout_pots(self.main_pot, winners_of_hi)
+            else:
+                lo_share = self.q(self.main_pot / Decimal("2"))
+                hi_share = self.main_pot - lo_share
+                self.payout_pots(hi_share, winners_of_hi)
+                self.payout_pots(lo_share, winners_of_lo)
 
     def handle_checkfold(self):
         """Handle 0 bet (check or fold depending on gamestate)"""

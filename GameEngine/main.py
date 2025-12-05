@@ -6,8 +6,8 @@ Connects GameController and GameRenderer
 #############################################################################
 #                           CONTROL SETTINGS                                #
 
-NUM_PLAYERS = 9
-STARTING_STACK = 2.00
+NUM_PLAYERS = 2
+STARTING_STACK = 10.00
 HUMAN_IN_LOOP = True
 SETTINGS = [NUM_PLAYERS, STARTING_STACK, HUMAN_IN_LOOP]
 

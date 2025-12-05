@@ -3,142 +3,37 @@
         {
             "seat": 0,
             "stack": 9.0,
-            "bet": 1.0,
+            "bet": 0.0,
             "status": "active",
             "cards": [
-                "D3",
-                "SJ",
-                "DQ",
-                "CA"
+                "S9",
+                "D9",
+                "H7",
+                "S10"
             ],
-            "acted": false,
+            "acted": true,
             "allin": false,
             "contrib": 1.0
         },
         {
             "seat": 1,
-            "stack": 10.0,
+            "stack": 9.0,
             "bet": 0.0,
-            "status": "folded",
+            "status": "active",
             "cards": [
-                "C5",
                 "S3",
-                "SA",
-                "CQ"
-            ],
-            "acted": true,
-            "allin": false,
-            "contrib": 0.0
-        },
-        {
-            "seat": 2,
-            "stack": 10.0,
-            "bet": 0.0,
-            "status": "folded",
-            "cards": [
-                "H5",
-                "S10",
-                "HK",
-                "HQ"
-            ],
-            "acted": true,
-            "allin": false,
-            "contrib": 0.0
-        },
-        {
-            "seat": 3,
-            "stack": 10.0,
-            "bet": 0.0,
-            "status": "folded",
-            "cards": [
-                "H7",
-                "HJ",
-                "H8",
-                "C8"
-            ],
-            "acted": true,
-            "allin": false,
-            "contrib": 0.0
-        },
-        {
-            "seat": 4,
-            "stack": 10.0,
-            "bet": 0.0,
-            "status": "folded",
-            "cards": [
-                "D2",
-                "HA",
-                "S6",
-                "C7"
-            ],
-            "acted": true,
-            "allin": false,
-            "contrib": 0.0
-        },
-        {
-            "seat": 5,
-            "stack": 10.0,
-            "bet": 0.0,
-            "status": "folded",
-            "cards": [
                 "SK",
-                "C2",
-                "DJ",
-                "H9"
-            ],
-            "acted": true,
-            "allin": false,
-            "contrib": 0.0
-        },
-        {
-            "seat": 6,
-            "stack": 9.0,
-            "bet": 1.0,
-            "status": "active",
-            "cards": [
-                "S4",
-                "S9",
-                "C6",
-                "CJ"
-            ],
-            "acted": true,
-            "allin": false,
-            "contrib": 1.0
-        },
-        {
-            "seat": 7,
-            "stack": 9.0,
-            "bet": 1.0,
-            "status": "active",
-            "cards": [
-                "S7",
                 "C3",
-                "C10",
-                "D8"
+                "H5"
             ],
-            "acted": true,
-            "allin": false,
-            "contrib": 1.0
-        },
-        {
-            "seat": 8,
-            "stack": 9.0,
-            "bet": 1.0,
-            "status": "active",
-            "cards": [
-                "H6",
-                "H2",
-                "C4",
-                "D6"
-            ],
-            "acted": true,
+            "acted": false,
             "allin": false,
             "contrib": 1.0
         }
     ],
-    "street": 0,
-    "pot": 4.0,
-    "main_pot": 0.0,
+    "street": 3,
+    "pot": 2.0,
+    "main_pot": 2.0,
     "side_pot": 0.0,
     "side_pot1": 0.0,
     "side_pot2": 0.0,
@@ -146,7 +41,13 @@
     "side_pot4": 0.0,
     "side_pot5": 0.0,
     "side_pot6": 0.0,
-    "community_cards": [],
-    "dealer_position": 7,
-    "current_player": 0
+    "community_cards": [
+        "C5",
+        "CQ",
+        "HJ",
+        "H3",
+        "SJ"
+    ],
+    "dealer_position": 1,
+    "current_player": 1
 }
