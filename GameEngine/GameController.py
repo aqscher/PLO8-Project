@@ -508,8 +508,10 @@ class PLO8:
             return
         
         else:
-            winners_of_hi = handEvaluator.evalHi(self.get_game_state())    #returns list of players with best hand, typically one player
-            winners_of_lo = handEvaluator.evalLo(self.get_game_state())    #returns [] if there are no low hands made, otherwise same as ^^
+            winners_of_hi, winning_hi_hands = handEvaluator.evalHi(self.get_game_state())    #returns list of players with best hand, typically one player
+            winners_of_lo, winning_lo_hands = handEvaluator.evalLo(self.get_game_state())    #returns [] if there are no low hands made, otherwise same as ^^
+            print(f"Player(s) {winners_of_hi} win with {winning_hi_hands}")
+            print(f"Player(s) {winners_of_lo} win with {winning_lo_hands}")
             if winners_of_lo == []:
                 self.payout_pots(self.main_pot, winners_of_hi)
             else:
@@ -686,7 +688,7 @@ class PLO8:
             'C7', 'D7', 'S7', 'H7',
             'C8', 'D8', 'S8', 'H8',
             'C9', 'D9', 'S9', 'H9',
-            'C10','D10','S10','H10',
+            'CT', 'DT', 'ST', 'HT',
             'CJ', 'DJ', 'SJ', 'HJ',
             'CQ', 'DQ', 'SQ', 'HQ',
             'CK', 'DK', 'SK', 'HK',

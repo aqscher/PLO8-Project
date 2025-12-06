@@ -110,6 +110,9 @@ class CardRenderer:
         """Draw the face of a card from string format like 'HA', 'D10', 'CK'"""
         # Parse card string
         suit_char, rank_str = self._parse_card(card_str)
+        #Change 'T' to '10'
+        if rank_str == 'T':
+            rank_str = '10'
         
         # Determine color
         is_red = suit_char in self.RED_SUITS

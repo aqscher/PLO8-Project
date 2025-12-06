@@ -17,3 +17,15 @@ board = gen_cards(["C4", "H2", "HQ", "HJ", "HT"])
 
 rank = HandEvaluator.eval_hand(cards, board)
 print(rank)
+
+cards = gen_cards(["H2", "H3"])
+board = gen_cards(["C4", "H5", "H7", "C8", "C9"])
+
+rank = HandEvaluator.eval_hand(cards, board)
+print(rank)
+
+cards = gen_cards(["CA", "CK"])
+board = gen_cards(["C4", "H2", "CQ", "CJ", "CT"])
+
+rank = HandEvaluator.eval_hand(cards, board)
+print(rank)
