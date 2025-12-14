@@ -73,7 +73,7 @@ class PLO8:
     def new_hand(self):
         # Eject the brokies
         self.players = [p for p in self.players if p['stack'] != Decimal("0.00")]
-        if len(self.players) < 2:
+        if len(self.players) < 2 and self.pot == Decimal("0.00"):
             print("Not enough players to start a new hand. Game Over.")
             self.running = False
             return
@@ -200,112 +200,10 @@ class PLO8:
             'current_player': self.current_player
         }
 
-    # -------------------------
-    # New pot-building utilities
-    # -------------------------
-    def build_pots(self):
-        """
-        Build main pot + side pots from player['contrib'] values.
-        Returns a list of pots in ascending order of cap:
-          pots[0] is main pot (lowest cap), each pot is dict:
-            {'amount': Decimal, 'eligible': [player_dicts]}
-        """
-        # collect unique positive contribution levels, sorted ascending
-        levels = sorted({p['contrib'] for p in self.players if p['contrib'] > 0})
-        if not levels:
-            return []
-
-        pots = []
-        prev = Decimal("0.00")
-
-        # for each level, compute the pot slice and eligible players
-        for level in levels:
-            pot_amount = Decimal("0.00")
-            eligible = []
-
-            for p in self.players:
-                contrib = p['contrib']
-                # amount this player contributes to this level
-                if contrib > prev:
-                    pay_in = min(contrib, level) - prev
-                    if pay_in > 0:
-                        pot_amount += pay_in
-
-                # a player is eligible for this pot if they contributed at least 'level'
-                # and they have not folded (folded players cannot win)
-                if contrib >= level and p['status'] == 'active':
-                    eligible.append(p)
-
-            pots.append({"amount": self.q(pot_amount), "eligible": eligible})
-            prev = level
-
-        return pots
-
-    def clear_pots_fields(self, pots):
-        """
-        Map built pots to self.main_pot and side_pot, side_pot1... for debugging/display.
-        pots should be ordered lowest->highest contribution tier.
-        """
-        # reset fields
-        self.main_pot = Decimal("0.00")
-        self.side_pot = Decimal("0.00")
-        self.side_pot1 = Decimal("0.00")
-        self.side_pot2 = Decimal("0.00")
-        self.side_pot3 = Decimal("0.00")
-        self.side_pot4 = Decimal("0.00")
-        self.side_pot5 = Decimal("0.00")
-        self.side_pot6 = Decimal("0.00")
-        self.side_pot7 = Decimal("0.00")
-
-        # map
-        field_order = ['main_pot', 'side_pot', 'side_pot1', 'side_pot2', 'side_pot3', 'side_pot4', 'side_pot5', 'side_pot6', 'side_pot7']
-        for i, pot in enumerate(pots):
-            if i >= len(field_order):
-                break
-            setattr(self, field_order[i], pot['amount'])
-
-    def payout_pots(self, pots, winners_by_rank):
-        """
-        Distribute pot amounts to winners.
-        pots: list of {'amount': Decimal, 'eligible': [player_dicts]}
-        winners_by_rank: list of lists of player dicts, in rank order (best first).
-            Example: [[p1], [p2,p3], [p4]]  -> p1 best, p2&p3 tied for 2nd, etc.
-        """
-        for pot in pots:
-            amt = pot['amount']
-            eligible = set(pot['eligible'])
-
-            # find the best-ranked winner(s) who are eligible
-            winner_group = None
-            for rank_group in winners_by_rank:
-                group = [p for p in rank_group if p in eligible]
-                if group:
-                    winner_group = group
-                    break
-
-            if not winner_group:
-                # no eligible winner (all folded?) — skip
-                continue
-
-            share = (amt / Decimal(len(winner_group))).quantize(CENTS)
-
-            # Distribute shares — if rounding leftover exists, give remainder to earliest seat in winner_group
-            total_distributed = share * Decimal(len(winner_group))
-            remainder = amt - total_distributed
-
-            for w in winner_group:
-                w['stack'] += share
-
-            if remainder > 0:
-                # choose winner with smallest seat index to receive remainder
-                winner_group_sorted = sorted(winner_group, key=lambda x: x['seat'])
-                winner_group_sorted[0]['stack'] += remainder
-
     # Main loop from here
     def advance_game(self, action):
         if self.street >= 4:
             self.new_hand()
-            print('wasp5')
             return
         if len(self.players) == 1:
             print("Game Over!")
@@ -370,7 +268,6 @@ class PLO8:
             print("ERROR: No valid next player found, advancing to showdown")
             while self.street < 4:
                 self.new_street()
-                print('wasp1')
             return
         
         #otherwise, just move on to next player in round of betting, dump gamestate
@@ -425,18 +322,10 @@ class PLO8:
             self.main_pot = self.q(self.pot)  # put bets in main pot (unchanged behavior)
 
         else:
-            # There are all-in players -> build main pot + side pots from contributions
-            #pots = self.build_pots()   # list of {'amount', 'eligible'}
-            # map amounts to display fields for debugging/JSON/visualization
-            #self.clear_pots_fields(pots)
-
             # Clear per-round state (bets become zero; contrib keeps the full contributed amount)
             for player in self.players:
                 player['acted'] = False
                 player['bet'] = Decimal("0.00")
-
-            # Note: we don't automatically payout here. Payout should happen at showdown,
-            # using self.payout_pots(pots, winners_by_rank) once you have hand evaluation results.
 
         #showdown is last betting round
         if self.street == 4:
@@ -491,9 +380,6 @@ class PLO8:
     def showdown(self):
         """Evaluate hands and determine winners"""
         print("SHOWDOWN")
-        # Build pots from contributions (main + side pots)
-        pots = self.build_pots()
-        self.clear_pots_fields(pots)  # update the side_pot fields for display/debug
         for p in self.players:
             p['acted'] = True
 
@@ -502,23 +388,45 @@ class PLO8:
             for p in self.players:
                 p['stack'] = Decimal('10.00')
                 p['acted'] = True
-            # winners_by_rank = [ [player1], [player2, player3], ... ]
-            # Then call:
-            #   self.payout_pots(pots, winners_by_rank)
             return
         
         else:
-            winners_of_hi, winning_hi_hands = handEvaluator.evalHi(self.get_game_state())    #returns list of players with best hand, typically one player
-            winners_of_lo, winning_lo_hands = handEvaluator.evalLo(self.get_game_state())    #returns [] if there are no low hands made, otherwise same as ^^
-            print(f"Player(s) {winners_of_hi} win with {winning_hi_hands}")
-            print(f"Player(s) {winners_of_lo} win with {winning_lo_hands}")
+            winners_of_hi, winning_hi_hands = handEvaluator.evalHi(self.get_game_state())    #returns list of players with winning hand, and the winning hands
+            winners_of_lo, winning_lo_hands = handEvaluator.evalLo(self.get_game_state())    #returns [], [] if there are no low hands made, otherwise same as ^^
+            print(f"Community cards: {self.community_cards}")
+            print(f"Players: {self.players}")
+            print("Player(s) winning hi:")
+            for p, hand in zip(winners_of_hi, winning_hi_hands):
+                print(f"Seat {p['seat']} wins with {hand}")
+            print("Player(s) winning lo:")    
+            for p, hand in zip(winners_of_lo, winning_lo_hands):
+                print(f"Seat {p['seat']} wins with {hand}")
             if winners_of_lo == []:
-                self.payout_pots(self.main_pot, winners_of_hi)
+                if len(winners_of_hi) == 1:
+                    self.players[winners_of_hi[0]['seat']]['stack'] += self.pot
+                else:
+                    split = self.q(self.pot / Decimal("2"))
+                    self.players[winners_of_hi[0]['seat']]['stack'] += split
+                    self.players[winners_of_hi[1]['seat']]['stack'] += self.pot - split
             else:
-                lo_share = self.q(self.main_pot / Decimal("2"))
-                hi_share = self.main_pot - lo_share
-                self.payout_pots(hi_share, winners_of_hi)
-                self.payout_pots(lo_share, winners_of_lo)
+                lo_share = self.q(self.pot / Decimal("2"))
+                hi_share = self.pot - lo_share
+                if len(winners_of_hi) == 1:
+                    self.players[winners_of_hi[0]['seat']]['stack'] += hi_share
+                else:
+                    split = self.q(hi_share / Decimal("2"))
+                    self.players[winners_of_hi[0]['seat']]['stack'] += split
+                    self.players[winners_of_hi[1]['seat']]['stack'] += hi_share - split
+                if len(winners_of_lo) == 1:
+                    self.players[winners_of_lo[0]['seat']]['stack'] += lo_share
+                else:
+                    split = self.q(lo_share / Decimal("2"))
+                    self.players[winners_of_lo[0]['seat']]['stack'] += split
+                    self.players[winners_of_lo[1]['seat']]['stack'] += lo_share - split
+            self.main_pot, self.pot = Decimal("0"), Decimal("0")
+            print(self.players)
+            
+                
 
     def handle_checkfold(self):
         """Handle 0 bet (check or fold depending on gamestate)"""

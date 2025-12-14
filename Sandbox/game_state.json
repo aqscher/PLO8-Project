@@ -2,38 +2,38 @@
     "players": [
         {
             "seat": 0,
-            "stack": 95.0,
-            "bet": 1.0,
+            "stack": 584.25,
+            "bet": 6.75,
             "status": "active",
             "cards": [
-                "CT",
-                "C6",
-                "C9",
-                "C4"
+                "CK",
+                "DT",
+                "C4",
+                "D2"
             ],
             "acted": false,
             "allin": false,
-            "contrib": 5.0
+            "contrib": 6.75
         },
         {
             "seat": 1,
-            "stack": 90.5,
-            "bet": 5.5,
+            "stack": 1393.81,
+            "bet": 15.19,
             "status": "active",
             "cards": [
-                "HJ",
-                "S6",
-                "C8",
-                "CK"
+                "ST",
+                "D8",
+                "S2",
+                "S4"
             ],
             "acted": true,
             "allin": false,
-            "contrib": 9.5
+            "contrib": 15.19
         }
     ],
-    "street": 2,
-    "pot": 14.5,
-    "main_pot": 8.0,
+    "street": 0,
+    "pot": 21.94,
+    "main_pot": 0.0,
     "side_pot": 0.0,
     "side_pot1": 0.0,
     "side_pot2": 0.0,
@@ -41,12 +41,7 @@
     "side_pot4": 0.0,
     "side_pot5": 0.0,
     "side_pot6": 0.0,
-    "community_cards": [
-        "DA",
-        "S8",
-        "H9",
-        "D3"
-    ],
+    "community_cards": [],
     "dealer_position": 1,
     "current_player": 0
 }
